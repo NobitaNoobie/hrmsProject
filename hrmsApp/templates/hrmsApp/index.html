@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HRMS Leave Application</title>
+</head>
+<body>
+
+<h1>Welcome, Employee {{ employee_id }}</h1>
+
+<h2>Apply for Leave</h2>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <label for="start_date">Start Date:</label>
+    <input type="date" id="start_date" name="start_date" required><br><br>
+    
+    <label for="end_date">End Date:</label>
+    <input type="date" id="end_date" name="end_date" required><br><br>
+    
+    <input type="submit" value="Apply for Leave">
+</form>
+
+{% if error_message %}
+<p>{{ error_message }}</p>
+{% endif %}
+
+{% if success_message %}
+<p>{{ success_message }}</p>
+{% endif %}
+
+</body>
+</html>
