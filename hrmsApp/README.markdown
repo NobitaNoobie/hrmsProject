@@ -157,7 +157,6 @@ __Notes__: using angle brackets "captures" part of the URL and sends it as a key
 * The employee_id part of the string defines the name that will be used to identify the matched pattern, and the 
 * 'str' part is a converter that determines what patterns should match this part of the URL path.
 * The colon(:) separates the converter and pattern name.
-
 Notes: Each view is responsible for doing one of two things: returing an HttpResponse object containing the content for the requested page, or raising an exception such as Http404.
 
 
