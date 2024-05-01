@@ -162,4 +162,3 @@ Notes: Each view is responsible for doing one of two things: returing an HttpRes
 
 ****************************************************************************Django middleware*************************
 
-A middleware is a regular Python class that hooks into Django's resquest/response lifecycle. Those classes hold pieces of code that are processed upon every request/response your Django application handles.
