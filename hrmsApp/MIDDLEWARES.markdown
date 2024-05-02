@@ -6,7 +6,7 @@ A class-based middleware approach is more frequently used than a function-based 
 
 In this project I will be using class-based middleware:
 
-`
+```
 class DemoMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -20,7 +20,7 @@ class DemoMiddleware:
         #code to be executed for each request/response after the view is called
 
         return response
-`
+```
 
 1. When the class is instantiated it is going to run the initialization method, __init__. __init__() method is called only once when the web server starts, unlike __call__() which method which is called once per request.
 2. __call__ method, this is where we set up the middleware to perform actions. Before the view or any other middleware is called this is where we perform logic. 
@@ -44,6 +44,7 @@ HOW DOES A CHAIN OF MIDDLEWARES WORK?
 THE ROLE OF get_response():
 
 Suppose we defined 3 middlewares:
+
 `MIDDLEWARE = [....,
             hrmsApp.middleware.FirstMiddleware,
             hrmsApp.middleware.SecondMiddleware,
@@ -53,7 +54,8 @@ This order is important.
 
 Three classes for 3 middlewares are defined in middleware.py file, likeso:
 
-`class FirstMiddleware:
+```
+class FirstMiddleware:
     def __init__(self, get_response):
         get_response = self.get_response
         print("First Middleware initialization)
@@ -62,12 +64,9 @@ Three classes for 3 middlewares are defined in middleware.py file, likeso:
         print("Before First view")
         response = self.get_response(request) #this takes it to the SecondMiddleware's __call__()method
         print("After First View")
-        return response
+        return response```
 
-    `
-
-`
-class SecondMiddleware:
+```class SecondMiddleware:
     def __init__(self, get_response):
         get_response = self.get_response
         print("Second Middleware initialization)
@@ -77,12 +76,12 @@ class SecondMiddleware:
         #response = self.get_response(request)
         print("After Second View")
         return response
-
-    `
+```
 
 Note that for SecondMiddleware, we do not get_response, this means that, the next middleware in chain, namely ThirdMiddleware, is not referenced at all. Check how the order of printing takes place.
 
-`class ThirdMiddleware:
+```
+class ThirdMiddleware:
     def __init__(self, get_response):
         get_response = self.get_response
         print("Third Middleware initialization)
@@ -92,7 +91,7 @@ Note that for SecondMiddleware, we do not get_response, this means that, the nex
         response = self.get_response(request)
         print("After Third View")
         return response
-    `
+```
 
 When we run the server, the following is printed in the console:
 
