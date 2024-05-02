@@ -19,7 +19,7 @@ class DemoMiddleware:
 
         #code to be executed for each request/response after the view is called
 
-    return response
+        return response
 `
 
 1. When the class is instantiated it is going to run the initialization method, __init__. __init__() method is called only once when the web server starts, unlike __call__() which method which is called once per request.
@@ -37,3 +37,73 @@ Django middleware hooks:
     * process_exception(request, exception): only if the view raised an exception
     * process_template_response(request, response): only if the view raised an exception.
     * process_response(request, response)
+
+
+
+HOW DOES A CHAIN OF MIDDLEWARES WORK?
+THE ROLE OF get_response():
+
+Suppose we defined 3 middlewares:
+`MIDDLEWARE = [....,
+            hrmsApp.middleware.FirstMiddleware,
+            hrmsApp.middleware.SecondMiddleware,
+            hrmsApp.middleware.ThirdMiddleware]`
+
+This order is important.
+
+Three classes for 3 middlewares are defined in middleware.py file, likeso:
+
+`class FirstMiddleware:
+    def __init__(self, get_response):
+        get_response = self.get_response
+        print("First Middleware initialization)
+
+    def __call__(self, request):
+        print("Before First view")
+        response = self.get_response(request) #this takes it to the SecondMiddleware's __call__()method
+        print("After First View")
+        return response
+
+    `
+
+`
+class SecondMiddleware:
+    def __init__(self, get_response):
+        get_response = self.get_response
+        print("Second Middleware initialization)
+
+    def __call__(self, request):
+        print("Before Second view")
+        #response = self.get_response(request)
+        print("After Second View")
+        return response
+
+    `
+
+Note that for SecondMiddleware, we do not get_response, this means that, the next middleware in chain, namely ThirdMiddleware, is not referenced at all. Check how the order of printing takes place.
+
+`class ThirdMiddleware:
+    def __init__(self, get_response):
+        get_response = self.get_response
+        print("Third Middleware initialization)
+
+    def __call__(self, request):
+        print("Before Third view")
+        response = self.get_response(request)
+        print("After Third View")
+        return response
+    `
+
+When we run the server, the following is printed in the console:
+
+`
+Third Middleware initialization
+Second Middleware initialization
+First Middleware initialization
+Before First View
+Before Second View
+After Second View
+After First View
+`
+
+get_response is called just like nested functions. Note that the ThirdMiddleware is not called at all. This is because it was not nested within SecondMiddleware because we did not use the get_response.
