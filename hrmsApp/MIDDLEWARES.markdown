@@ -32,9 +32,9 @@ Django middleware hooks:
 2. three optional methods that execute at different points of the view request/response life-cycle.
 3. Called during request:
     * process_request(request)
-    * process_view(request, view_func, view_args, view_kwargs): provides access to the view before the request hits the view. Here we can perform checks before it hits the view.
+    * process_view(request, view_func, view_args, view_kwargs): provides access to the view before the request hits the view. Here we can perform checks before it hits the view. It should return either None or an HttpResponse object. If it returns None, Django will continue processing this request, executing any other process_view() middleware and, then, the appropriate view. If it returns an Response object, then view will not be called at all.
 4. Called during response:
-    * process_exception(request, exception): only if the view raised an exception
+    * process_exception(request, exception): only if the view raised an exception. Should return None or a Response object.
     * process_template_response(request, response): only if the view raised an exception.
     * process_response(request, response)
 
@@ -107,3 +107,7 @@ After First View
 `
 
 get_response is called just like nested functions. Note that the ThirdMiddleware is not called at all. This is because it was not nested within SecondMiddleware because we did not use the get_response.
+
+
+WHAT IS TEMPLATE RESPONSE?
+Template Response is a subclass of SimpleTemplateResponse that knows about the current HttpRequest.

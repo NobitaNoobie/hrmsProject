@@ -50,7 +50,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'hrmsApp.middleware.DemoMiddleware'
+    'hrmsApp.middleware.DemoMiddleware',
+    'hrmsApp.middleware.MyProcessMiddleware'
 ]
 
 ROOT_URLCONF = 'hrmsProject.urls'
