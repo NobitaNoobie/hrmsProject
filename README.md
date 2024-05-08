@@ -1,7 +1,18 @@
 py manage.py runserver -> for starting the development server
 py manage.py runserver 8080 -> for changing the port 
 
-HOW TO START THE PROJECT?
+HOW TO MAKE A NEW VIRTUAL ENVIRONMENT AND START A PROJECT IN THE ENVIRONMENT?
+A virtual environment is an isolated Python environment that allows you to install packages and dependencies for your project without affecting the global Python installation on the system.
+
+1. Check python installation:
+	python --version
+2. Install virtual environment:
+	pip install virtualenv
+3. If error, do the following:
+	pip install --upgrade pip
+
+
+HOW TO START THE PROJECT and WORK WITH THE venv?
 
 1. firstly create django virtual environment
 	python -m venv django-env
@@ -10,6 +21,9 @@ HOW TO START THE PROJECT?
 	Scripts\activate
 the vitual environment will be activated
 3. cd..
+
+this to navigate back to system user outside the virtual environment file because virtual environment is separated from the project. Refer below to learn 2 methods to structure virtual environment. Note that cd.. will take you out of the FOLDER of the virtual environment. To deactivate the virtual environment type 'deactivate'.
+
 4. install django and other required packages inside this virtual environment you have created
 	pip install django_rest_framework
 	INSTALL DJANGO COMMAND: [py -m pip install Django]
@@ -22,8 +36,14 @@ the vitual environment will be activated
 	py manage.py startapp appName
 8. need to register the django app as well as the REST framework
 inside the INSTALLED APPS:
-	'rest_framework'
-	'appName'
+	['rest_framework',
+	'appName',...]
+
+2 WAYS TO STRUCTURE THE VIRTUAL ENVIRONMENT
+1. Putting virtual env inside project. Separating environments for different projects.
+2. Separating virtual env and deploy many projects using the same virtual environment. I prefer this method.
+
+
 
 
 PROJECT STRUCTURE:

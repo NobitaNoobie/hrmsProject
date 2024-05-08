@@ -161,4 +161,6 @@ Notes: Each view is responsible for doing one of two things: returing an HttpRes
 
 
 ****************************************************************************Django middleware*************************
+Refer hrmsApp/MIDDLEWARE.readme for the details
+
 
