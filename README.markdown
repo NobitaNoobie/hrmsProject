@@ -104,3 +104,6 @@ CMD COMMANDS:---------------------------------------------
 		* Run __python manage.py makemigrations__ to create migrations for those changes. To make migrations for a particular app in your project, run __python manage.py makemigrations appName__.
 		* Run __python manage.py migrate__ to apply those changes to the database.
 
+4. Create superuser
+		py manage.py createsuperuser
+		after this runserver then go to the /admin endpoint to login to the admin panel

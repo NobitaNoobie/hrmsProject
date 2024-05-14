@@ -102,7 +102,7 @@ Definition: A model is a single, definitive source of information about your dat
 1. Each model is represented by Python classes.
 2. These classes are written in the __hrmsApp/models.py__ file
 3. CAUTION: Naming standard: use lowercase letters and underscored to separate words, example, employee_id
-4. All schema fields are represented as objects of different Field classes.
+4. All schema fields are represented as objects of different Field classes(just like CharType etc).
 
 This model definition helps Django to:
 1. create a database table for this app
@@ -110,6 +110,20 @@ This model definition helps Django to:
 
 
 NEXT STEP: To include the app in our project, we need to add a reference to its configuration class in the INSTALLED_APPS setting. The HrmsAppConfig class is in the hrmsApp/apps.py file, so its dotted path is 'hrmsApp.apps.HrmsAppConfig'. Edit the hrmsProject/settings.py file and add that dotted path to the INSTALLED_APPS setting. 
+
+
+-------------------STEPS OVERVIEW------------------
+1. make a data model in appName/models.py
+
+    The __str__() dunder method actually renames the model object to a readable format in the admin panel. Otherwise a confusing model object name will be shown in the admin panel.
+
+2. register this model and all modles in appName/admin.py
+    use the following command:
+        from .models import ModelName
+        admin.site.register(ModelName)
+
+    you can register all models in this single file.
+----------------------------------------------------
 
 
 ------------------------
