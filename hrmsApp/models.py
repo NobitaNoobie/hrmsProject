@@ -5,6 +5,21 @@ from django.utils import timezone
 
 # Create your models here.
 # below is where the inheritance from models class takes place
+
+class Emp_Leave_Data(models.Model):
+    auto_id = models.AutoField(primary_key=True)
+    emp_id = models.CharField(max_length=255) 
+    leave_type = models.CharField(max_length=255) 
+    leave_description = models.CharField(max_length= 5000)
+    leave_from = models.DateField()
+    leave_to = models.DateField()
+    leave_days = models.DecimalField(max_digits=7, decimal_places=2)
+    date_of_request =  models.DateTimeField(default=timezone.now)
+    approval_status = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'emp_leave_data'
+
 class LeaveApplication(models.Model):
     employee_id = models.CharField(primary_key=True, max_length=8, verbose_name="employee_id")
     employee_name = models.CharField(max_length=50)
@@ -44,5 +59,5 @@ class LeaveApplication(models.Model):
         return self.employee_name + ' ' + self.employee_id
 
     class Meta:
-        db_table = 'hrmsapp_leaveapplication'
+        db_table = 'hrms_leaveapplication'
     

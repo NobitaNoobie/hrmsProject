@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'hrmsProject.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'hrmsystem',
+        'NAME': 'prod_data',
         'USER': 'root',
         'PASSWORD': 'Gstn#1234567',
         'HOST': 'localhost',
@@ -114,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 

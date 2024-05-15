@@ -6,9 +6,78 @@ from rest_framework.response import Response
 
 from django.shortcuts import render, redirect
 from django.utils import timezone
+from django.db.models import Q, DateField
+from datetime import date
+from .models import Emp_Leave_Data
 
-from hrmsApp.models import LeaveApplication
-from hrmsApp.serializers import HrmsAppSerializer
+from .models import LeaveApplication
+from .serializers import HrmsAppSerializer
+
+from datetime import datetime
+from django.db.models.functions import ExtractDay, Cast
+
+from datetime import datetime
+from django.db.models.functions import Cast
+from django.db.models import DateField
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+
+
+@api_view(['GET'])
+def leave_applications_on_date(request, date):
+    if request.method == 'GET':
+        try:
+            today_date = datetime.strptime(date, "%Y-%m-%d").date()
+            #print(today_date)
+
+            # # Retrieve all Emp_Leave_Data objects
+            # objs = Emp_Leave_Data.objects.all()
+            
+            # # Print date_of_request for debugging
+            # for obj in objs:
+            #     print(obj.date_of_request)
+
+            print(Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count())
+            leave_count = Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count()
+
+            return Response({'employees_applied_for_leave': leave_count, "status": 1})
+        except Exception as e:
+            # Return an error response if any exception occurs
+            return Response({'error': str(e), "status": 0})
+        
+
+@api_view(['GET'])
+def leave_applications_on_today(request):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        
+        try:
+            today_date = datetime.strptime(today_date_str, "%Y-%m-%d").date()
+            leave_count = Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count()
+
+            return Response({'employees_applied_for_leave': leave_count, "status": 1})
+        except Exception as e:
+            # Return an error response if any exception occurs
+            return Response({'error': str(e), "status": 0})
+
+
+
+
+@api_view(['GET'])
+def num_employees_on_leave_today(request):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', str(date.today())) #parameter is today's date by default
+
+        try: 
+            today_date = date.fromisoformat(today_date_str)
+            employee_count = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)).count()
+            return Response({"number_of_employees_on_leave_today": employee_count, "status":1})
+        except Exception as e:
+            return Response({'error':str(e) , "status":0})
+
+
+
+
 
 #views are pyhton functions that take a request and return a web response, in this case an HttpResponse
 

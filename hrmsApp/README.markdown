@@ -178,3 +178,12 @@ Notes: Each view is responsible for doing one of two things: returing an HttpRes
 Refer hrmsApp/MIDDLEWARE.readme for the details
 
 
+why did filter not work and annotate worked?
+
+The reason why the annotate method worked while the filter method alone didn't work is related to how Django ORM handles date comparisons in queries.
+
+When you directly filter on a DateTimeField using the __date lookup, Django does not convert the field to a date object before comparison. Instead, it tries to compare the DateTimeField with a date object, which might not yield the desired results due to differences in time components.
+
+On the other hand, when using the annotate method along with Cast to cast the DateTimeField to a DateField, Django explicitly converts the DateTimeField to a date object. This ensures that the comparison is performed correctly, resulting in the expected filtering based on the date part of the DateTimeField.
+
+So, by using annotate with Cast, we explicitly instruct Django to treat the date_of_request field as a date, allowing us to accurately filter the queryset based on the date part of the field.
