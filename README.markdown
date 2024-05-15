@@ -107,3 +107,8 @@ CMD COMMANDS:---------------------------------------------
 4. Create superuser
 		py manage.py createsuperuser
 		after this runserver then go to the /admin endpoint to login to the admin panel
+
+
+
+TIPS---------------------------------------------------------------------
+1. We can generate the SQL query from the query set using queryset.query, where queryset = ModelName.objects.filter(....)

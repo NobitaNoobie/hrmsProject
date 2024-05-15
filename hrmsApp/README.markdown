@@ -187,3 +187,8 @@ When you directly filter on a DateTimeField using the __date lookup, Django does
 On the other hand, when using the annotate method along with Cast to cast the DateTimeField to a DateField, Django explicitly converts the DateTimeField to a date object. This ensures that the comparison is performed correctly, resulting in the expected filtering based on the date part of the DateTimeField.
 
 So, by using annotate with Cast, we explicitly instruct Django to treat the date_of_request field as a date, allowing us to accurately filter the queryset based on the date part of the field.
+
+
+
+DJANGO ORM-------------------------------------------------
+1. Q objects in Django: The Django Q object is a container for keyword arguments. It is primarily used for complex queries that require logical operations. The keyword arguments are encapsulated by the Q object and passed to query methods such filter, get, exclude etc. Multiple query objects can be combined using logical operators. It basically remove the redundancy of writing multiple query methods then ultimately connecting them with logical operators.

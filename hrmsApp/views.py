@@ -44,7 +44,9 @@ def leave_applications_on_date(request, date):
         except Exception as e:
             # Return an error response if any exception occurs
             return Response({'error': str(e), "status": 0})
-        
+
+#date_of_request is a DateTime field, when you directly compare using __date lookup, not converted to date object before comparison. 
+#Cast converts DateTime field to DateField, converts to date object.    
 
 @api_view(['GET'])
 def leave_applications_on_today(request):
@@ -70,6 +72,10 @@ def num_employees_on_leave_today(request):
 
         try: 
             today_date = date.fromisoformat(today_date_str)
+            #don't need to annotate and cast here because leave_from is a DateField
+            querySet = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date))
+            #you can generate the SQL query by doing .query on the query set. 
+            print(querySet.query)
             employee_count = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)).count()
             return Response({"number_of_employees_on_leave_today": employee_count, "status":1})
         except Exception as e:
