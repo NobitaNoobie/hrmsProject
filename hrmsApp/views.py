@@ -40,7 +40,7 @@ def leave_applications_on_date(request, date):
             print(Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count())
             leave_count = Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count()
 
-            return Response({'employees_applied_for_leave': leave_count, "status": 1})
+            return Response({'employees applied for leave': leave_count, "status": 1})
         except Exception as e:
             # Return an error response if any exception occurs
             return Response({'error': str(e), "status": 0})
@@ -57,12 +57,21 @@ def leave_applications_on_today(request):
             today_date = datetime.strptime(today_date_str, "%Y-%m-%d").date()
             leave_count = Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count()
 
-            return Response({'employees_applied_for_leave': leave_count, "status": 1})
+            return Response({'employees applied for leave today': leave_count, "status": 1})
         except Exception as e:
             # Return an error response if any exception occurs
             return Response({'error': str(e), "status": 0})
 
 
+@api_view(['GET'])
+def num_employees_on_leave_on_day(request, date):
+    if request.method == 'GET':
+        try:
+            today_date = datetime.strptime(date, "%Y-%m-%d").date()
+            num_employees = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)).count()
+            return Response({"Number of employees on leave on %date": num_employees , "status":1})
+        except Exception as e:
+            return Response({"error":str(e), "status":0})
 
 
 @api_view(['GET'])

@@ -9,4 +9,5 @@ urlpatterns = [
     path("leave_applications_on_date/<str:date>/", views.leave_applications_on_date, name="leave_applications_on_date"),
     path("leave_applications_on_today/", views.leave_applications_on_today, name="leave_applications_on_today"),
     path("num_employees_on_leave_today/", views.num_employees_on_leave_today, name='num_employees_on_leave_today'),
+    path("num_employees_on_leave_on_day/<str:date>/", views.num_employees_on_leave_on_day, name="num_employees_on_leave_on_day")
 ]
