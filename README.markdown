@@ -4,6 +4,7 @@ py manage.py runserver 8080 -> for changing the port
 
 Maintained by Tiyasa Khan
 
+## for details on each topic refer hrmsApp/README.markdown
 
 HOW TO MAKE A NEW VIRTUAL ENVIRONMENT AND START A PROJECT IN THE ENVIRONMENT?
 A virtual environment is an isolated Python environment that allows you to install packages and dependencies for your project without affecting the global Python installation on the system.

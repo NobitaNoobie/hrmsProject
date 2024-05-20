@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.db.models import Q, DateField
 from datetime import date
-from .models import Emp_Leave_Data
+from .models import Emp_Leave_Data, Staff_data
 
 from .models import LeaveApplication
 from .serializers import HrmsAppSerializer
@@ -30,19 +30,16 @@ def leave_applications_on_date(request, date):
             today_date = datetime.strptime(date, "%Y-%m-%d").date()
             #print(today_date)
 
-            # # Retrieve all Emp_Leave_Data objects
+            # # all Emp_Leave_Data objects
             # objs = Emp_Leave_Data.objects.all()
-            
-            # # Print date_of_request for debugging
             # for obj in objs:
             #     print(obj.date_of_request)
 
-            print(Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count())
+            print(Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).get_queryset)
             leave_count = Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count()
 
             return Response({'employees applied for leave': leave_count, "status": 1})
         except Exception as e:
-            # Return an error response if any exception occurs
             return Response({'error': str(e), "status": 0})
 
 #date_of_request is a DateTime field, when you directly compare using __date lookup, not converted to date object before comparison. 
@@ -59,7 +56,6 @@ def leave_applications_on_today(request):
 
             return Response({'employees applied for leave today': leave_count, "status": 1})
         except Exception as e:
-            # Return an error response if any exception occurs
             return Response({'error': str(e), "status": 0})
 
 
@@ -68,8 +64,32 @@ def num_employees_on_leave_on_day(request, date):
     if request.method == 'GET':
         try:
             today_date = datetime.strptime(date, "%Y-%m-%d").date()
-            num_employees = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)).count()
-            return Response({"Number of employees on leave on %date": num_employees , "status":1})
+            employees_on_leave = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date))
+            num_employees = employees_on_leave.count()
+
+            #list of employees on leave today
+            # -- SQL QUERY, LIST OF EMPLOYEES ON LEAVE TODAY-------------------------------------------- 
+            # select staff_data.staff_id as 'List of employees on leave today' ,staff_data.firstname as 'First Name', staff_data.lastname as 'Last Name' from staff_data
+            # join emp_leave_data on staff_data.staff_id = emp_leave_data.emp_id 
+            # where emp_leave_data.leave_from <= curdate() and curdate() <= emp_leave_data.leave_to;
+
+            # list_of_employees_on_leave = Staff_data.objects.filter(Q(staff_id__leave_from__lte=today_date) & Q(staff_id__leave__leave_to__gte=today_date)).distinct()
+
+            list_of_employees_on_leave = Staff_data.objects.filter(staff_id__in= employees_on_leave.values('emp_id')).distinct()
+            
+            employee_data = []
+            for employee in list_of_employees_on_leave:
+                employee_info = {
+                    'Staff Id': employee.staff_id,
+                    'Name': f"{employee.firstname} {employee.lastname}"
+                }
+                employee_data.append(employee_info)
+
+            response_data = {
+                f'Number of employees on leave on {today_date}': num_employees,
+                f'List of employees on leave on {today_date}': employee_data
+            }
+            return Response({"msg": response_data , "status":1})
         except Exception as e:
             return Response({"error":str(e), "status":0})
 
@@ -81,17 +101,42 @@ def num_employees_on_leave_today(request):
 
         try: 
             today_date = date.fromisoformat(today_date_str)
-            #don't need to annotate and cast here because leave_from is a DateField
-            querySet = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date))
+            #don't need to annotate and cast here because leave_from is a DateField. it will directly create a date object.
+            employees_on_leave_query_set = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)) #query set is returned
             #you can generate the SQL query by doing .query on the query set. 
-            print(querySet.query)
-            employee_count = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)).count()
-            return Response({"number_of_employees_on_leave_today": employee_count, "status":1})
+            print(employees_on_leave_query_set.query)
+            employee_count = employees_on_leave_query_set.count()
+            list_of_employees_on_leave = Staff_data.objects.filter(staff_id__in = employees_on_leave_query_set.values("emp_id")).distinct()
+
+            employees_on_leave_data_array = []
+            for employee in list_of_employees_on_leave:
+                employee_info = {
+                    "Staff id": employee.staff_id,
+                    "Name": f"{employee.firstname} {employee.lastname}"
+                }
+                employees_on_leave_data_array.append(employee_info)
+
+            response_data = {
+                "Number of employees on leave today": employee_count,
+                "List of employees on leave today: ": employees_on_leave_data_array}
+            return Response({"msg": response_data, "status":1})
         except Exception as e:
             return Response({'error':str(e) , "status":0})
 
 
+# @api_view(['GET'])
+# def num_employees_on_leave_past_seven_days(request):
+#     if request.method == 'GET':
+#         today_date_str = request.GET.get('date', str(date.today()))
 
+#         try:
+#             today_date = date.fromisoformat(today_date_str)
+#             #extract how many people were absent on each day of last week.
+
+
+#             return 
+#         except Exception as e:
+#             return Response({"msg": f"On an average {count_week_avg} number of employees were on leave in the past week"})
 
 
 #views are pyhton functions that take a request and return a web response, in this case an HttpResponse
@@ -125,7 +170,7 @@ def employee_list(request):
 @api_view(['GET'])
 def employeehome(request, employee_id):
     try:
-        employee = LeaveApplication.objects.get(pk=employee_id)
+        employee = LeaveApplication.objects.get(pk=emp_id)
     except LeaveApplication.DoesNotExist:
         return Response({"message":"User not found", "status":0})
     

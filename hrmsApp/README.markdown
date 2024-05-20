@@ -189,6 +189,44 @@ On the other hand, when using the annotate method along with Cast to cast the Da
 So, by using annotate with Cast, we explicitly instruct Django to treat the date_of_request field as a date, allowing us to accurately filter the queryset based on the date part of the field.
 
 
+definition:
+
+1. Field lookups: checks model fields based on some condition.
+    __contains
+    __date
+    __day
+
+
+
 
 DJANGO ORM-------------------------------------------------
-1. Q objects in Django: The Django Q object is a container for keyword arguments. It is primarily used for complex queries that require logical operations. The keyword arguments are encapsulated by the Q object and passed to query methods such filter, get, exclude etc. Multiple query objects can be combined using logical operators. It basically remove the redundancy of writing multiple query methods then ultimately connecting them with logical operators.
+
+[Reference Book](https://books.agiliq.com/projects/django-orm-cookbook/en/latest/index.html)
+
+1. Q() objects in Django: The Django Q object is a container for keyword arguments. It is primarily used for complex queries that require logical operations. The keyword arguments are encapsulated by the Q object and passed to query methods such filter, get, exclude etc. Multiple query objects can be combined using logical operators. It basically remove the redundancy of writing multiple query methods then ultimately connecting them with logical operators.
+
+2. F() objects in Django: It represents the value of a model field.
+
+
+3. Find the SQL query associated with QuerySet:
+    querySet = ModelName.objects.all() #for getting all objects of the Model/run any query here, the result is a QuerySet[]
+    str(querySet.query)
+    #print this
+
+4. OR queries in Django ORM:
+    There are 2 options:
+        querySet_1 | querySet_2
+        filter(Q(condition_1) | Q(condition_2))
+    option 1: 
+        ans = ModelName.objects.filter(condition1) | ModelName.objects.filter(condition2)
+    option 2:
+        from django.db.models import Q
+        ans = ModelName.objects.filter(Q(condition1) | Q(condition2)).count()
+
+5. AND query:
+    There are 3 options:
+        option 1: filter(condition 1, condition 2)
+        option 2: queryset_1 & queryset_2
+        option 3: filter(Q(condition 1) & Q(condition 2))
+
+6. 

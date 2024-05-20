@@ -20,6 +20,21 @@ class Emp_Leave_Data(models.Model):
     class Meta:
         db_table = 'emp_leave_data'
 
+
+class Staff_data(models.Model):
+    auto_id = models.AutoField(primary_key=True)
+    staff_id = models.CharField(max_length=255) 
+    firstname = models.CharField(max_length=255) 
+    lastname = models.CharField(max_length=255) 
+    dob = models.CharField(max_length=255) 
+    email = models.CharField(max_length=255) 
+    phone_number = models.CharField(max_length=255) 
+    position = models.CharField(max_length=255)
+    
+    class Meta:
+        db_table = 'staff_data'
+
+
 class LeaveApplication(models.Model):
     employee_id = models.CharField(primary_key=True, max_length=8, verbose_name="employee_id")
     employee_name = models.CharField(max_length=50)
