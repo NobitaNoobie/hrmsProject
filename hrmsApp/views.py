@@ -24,6 +24,120 @@ from rest_framework.decorators import api_view
 
 
 @api_view(['GET'])
+def wfh_frequency(request, employee_id):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        try:
+            today_date = datetime.strptime(today_date_str, "%Y-%m-%d").date()
+            sum = 0
+            sumsq = 0
+            num_gap_days_arr = []
+            avg_leave_gaps = 0.0
+            
+            # query sets
+            emp_wfh_leave_duration = Emp_Leave_Data.objects.filter(emp_id = employee_id , leave_from__lte = today_date , leave_type = 6).order_by('leave_from')
+            emp_data = Staff_data.objects.get(staff_id = employee_id)
+            
+            # average
+            for i in range(1, len(emp_wfh_leave_duration)):
+                num_gap_days = abs(emp_wfh_leave_duration[i].leave_from - emp_wfh_leave_duration[i-1].leave_to).days
+                num_gap_days_arr.append(num_gap_days)
+                print(num_gap_days)
+                sum += num_gap_days
+
+            if len(emp_wfh_leave_duration)-1 != 0:
+                avg_leave_gaps = sum / (len(emp_wfh_leave_duration) - 1)
+            else:
+                avg_leave_gaps = 0
+
+
+            # variance and standard deviation
+            std_in_wfh = 0.0
+            for ele in num_gap_days_arr:
+                sumsq += pow((ele - avg_leave_gaps),2)
+            
+            print(sumsq)
+            
+            if len(emp_wfh_leave_duration)-1 != 0:
+                variance = sumsq / (len(emp_wfh_leave_duration) - 1)
+                print(variance)
+                std_in_wfh = round(pow(variance,0.5), 2)
+            else:
+                std_in_wfh = 0
+
+            res = ""
+            if std_in_wfh <= 7:
+                res = "highly"
+            elif std_in_wfh <= 15:
+                res = "moderately"
+            else:
+                res = "less"
+
+            return Response({'msg': f'{emp_data.firstname} {emp_data.lastname} takes WFH after {avg_leave_gaps} on an average. A standard deviation of {std_in_wfh} indicates that the person is {res} likely to follow this WFH pattern.', 'status':1})
+
+
+        except Exception as e:
+            return Response({'error': str(e) , 'status': 0})
+        
+        
+@api_view(['GET'])
+def leave_frequency(request, employee_id):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        try:
+            today_date = datetime.strptime(today_date_str, "%Y-%m-%d").date()
+            sum = 0
+            sumsq = 0
+            num_gap_days_arr = []
+            avg_leave_gaps = 0.0
+            
+            # query sets
+            emp_wfh_leave_duration = Emp_Leave_Data.objects.filter(emp_id = employee_id , leave_from__lte = today_date).exclude(leave_type = 6).order_by('leave_from')
+            emp_data = Staff_data.objects.get(staff_id = employee_id)
+            
+            # average
+            for i in range(1, len(emp_wfh_leave_duration)):
+                num_gap_days = abs(emp_wfh_leave_duration[i].leave_from - emp_wfh_leave_duration[i-1].leave_to).days
+                num_gap_days_arr.append(num_gap_days)
+                print(num_gap_days)
+                sum += num_gap_days
+
+            if len(emp_wfh_leave_duration)-1 != 0:
+                avg_leave_gaps = sum / (len(emp_wfh_leave_duration) - 1)
+            else:
+                avg_leave_gaps = 0
+
+
+            # variance and standard deviation
+            std_in_wfh = 0.0
+            for ele in num_gap_days_arr:
+                sumsq += pow((ele - avg_leave_gaps),2)
+            
+            print(sumsq)
+            
+            if len(emp_wfh_leave_duration)-1 != 0:
+                variance = sumsq / (len(emp_wfh_leave_duration) - 1)
+                print(variance)
+                std_in_wfh = round(pow(variance,0.5), 2)
+            else:
+                std_in_wfh = 0
+
+            res = ""
+            if std_in_wfh <= 7:
+                res = "highly"
+            elif std_in_wfh <= 15:
+                res = "moderately"
+            else:
+                res = "less"
+
+            return Response({'msg': f'{emp_data.firstname} {emp_data.lastname} takes leaves after {avg_leave_gaps} on an average. A standard deviation of {std_in_wfh} indicates that the person is {res} likely to follow this leave pattern.', 'status':1})
+
+
+        except Exception as e:
+            return Response({'error': str(e) , 'status': 0})
+
+
+@api_view(['GET'])
 def leave_applications_on_date(request, date):
     if request.method == 'GET':
         try:
@@ -43,7 +157,8 @@ def leave_applications_on_date(request, date):
             return Response({'error': str(e), "status": 0})
 
 #date_of_request is a DateTime field, when you directly compare using __date lookup, not converted to date object before comparison. 
-#Cast converts DateTime field to DateField, converts to date object.    
+#Cast converts DateTime field to DateField, converts to date object.  
+  
 
 @api_view(['GET'])
 def leave_applications_on_today(request):
@@ -84,7 +199,7 @@ def num_employees_on_leave_on_day(request, date):
                     'Name': f"{employee.firstname} {employee.lastname}"
                 }
                 employee_data.append(employee_info)
-
+ 
             response_data = {
                 f'Number of employees on leave on {today_date}': num_employees,
                 f'List of employees on leave on {today_date}': employee_data
@@ -170,7 +285,7 @@ def employee_list(request):
 @api_view(['GET'])
 def employeehome(request, employee_id):
     try:
-        employee = LeaveApplication.objects.get(pk=emp_id)
+        employee = LeaveApplication.objects.get(pk=employee_id)
     except LeaveApplication.DoesNotExist:
         return Response({"message":"User not found", "status":0})
     
