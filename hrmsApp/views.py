@@ -22,6 +22,57 @@ from django.db.models import DateField
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
+def count_leave_instances_till_date(date, emp_id):
+    leave_instances_count = Emp_Leave_Data.objects.filter(emp_id = emp_id , leave_from__lte = date).count()
+    return leave_instances_count
+
+def count_all_leave_instances(emp_id):
+    leave_instances_count = Emp_Leave_Data.objects.filter(emp_id = emp_id).count()
+    return leave_instances_count
+
+def get_staff_data(emp_id):
+    emp_data = Staff_data.objects.get(staff_id = emp_id)
+    return emp_data
+
+
+
+@api_view(['GET'])
+def leave_rejection_rate(request, employee_id):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        try:
+            today_date = datetime.strptime(today_date_str, "%Y-%m-%d").date()
+            num_leave_instances = count_all_leave_instances(employee_id)
+            print('Number of leave instances =', num_leave_instances)
+            num_rejected_leaves = Emp_Leave_Data.objects.filter(emp_id = employee_id, approval_status = 0).count()
+            leave_rej_rate = 0
+            if num_rejected_leaves >= 1:
+                leave_rej_rate = round((num_rejected_leaves*100)/num_leave_instances, 2)
+
+            emp_data = get_staff_data(employee_id)
+
+            if num_leave_instances == 0:
+                return Response({'msg':f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has not taken any leaves' , 'status':1})
+            else:
+                return Response({'msg':f'{leave_rej_rate}% of {emp_data.firstname} {emp_data.lastname}\'s leaves have been rejected.' , 'status':1})
+            
+
+        except Exception as e:
+            return Response({'msg': str(e), 'status': 0})
+
+
+@api_view(['GET'])
+def planned_unplanned_percentage(request, employee_id):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        try:
+            today_date = datetime.strptime(today_date_str, "%Y-%m-%d").date()
+            count_total_leave_instances = count_leave_instances_till_date(today_date, employee_id)
+            planned_leaves = Emp_Leave_Data.objects.filter()
+            return Response({'msg':'' , 'status':1})
+        except Exception as e:
+            return Response({'msg': str(e) , 'status': 0})
+
 
 @api_view(['GET'])
 def wfh_frequency(request, employee_id):
@@ -36,7 +87,7 @@ def wfh_frequency(request, employee_id):
             
             # query sets
             emp_wfh_leave_duration = Emp_Leave_Data.objects.filter(emp_id = employee_id , leave_from__lte = today_date , leave_type = 6).order_by('leave_from')
-            emp_data = Staff_data.objects.get(staff_id = employee_id)
+            emp_data = get_staff_data(employee_id)
             
             # average
             for i in range(1, len(emp_wfh_leave_duration)):
@@ -49,6 +100,8 @@ def wfh_frequency(request, employee_id):
                 avg_leave_gaps = sum / (len(emp_wfh_leave_duration) - 1)
             else:
                 avg_leave_gaps = 0
+
+            print(avg_leave_gaps)
 
 
             # variance and standard deviation
@@ -73,8 +126,13 @@ def wfh_frequency(request, employee_id):
             else:
                 res = "less"
 
-            return Response({'msg': f'{emp_data.firstname} {emp_data.lastname} takes WFH after {avg_leave_gaps} on an average. A standard deviation of {std_in_wfh} indicates that the person is {res} likely to follow this WFH pattern.', 'status':1})
-
+            # added round(average) here because if we add round before during calculations, the other calcs like variation std will be affected
+            if len(emp_wfh_leave_duration) > 1:
+                return Response({'msg': f'{emp_data.firstname} {emp_data.lastname} takes WFH after {round(avg_leave_gaps)} days on an average. A standard deviation of {std_in_wfh} indicates that the person is {res} likely to follow this WFH pattern.', 'status':1})
+            elif len(emp_wfh_leave_duration) == 0:
+                return Response({'msg': f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has not taken any WFH', 'status': 1})
+            else:
+                return Response({'msg': f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has taken only 1 WFH. Not enough data to predict leave frequency.', 'status':1})
 
         except Exception as e:
             return Response({'error': str(e) , 'status': 0})
@@ -93,7 +151,7 @@ def leave_frequency(request, employee_id):
             
             # query sets
             emp_wfh_leave_duration = Emp_Leave_Data.objects.filter(emp_id = employee_id , leave_from__lte = today_date).exclude(leave_type = 6).order_by('leave_from')
-            emp_data = Staff_data.objects.get(staff_id = employee_id)
+            emp_data = get_staff_data(employee_id)
             
             # average
             for i in range(1, len(emp_wfh_leave_duration)):
@@ -130,8 +188,12 @@ def leave_frequency(request, employee_id):
             else:
                 res = "less"
 
-            return Response({'msg': f'{emp_data.firstname} {emp_data.lastname} takes leaves after {avg_leave_gaps} on an average. A standard deviation of {std_in_wfh} indicates that the person is {res} likely to follow this leave pattern.', 'status':1})
-
+            if len(emp_wfh_leave_duration) > 1:
+                return Response({'msg': f'{emp_data.firstname} {emp_data.lastname} takes leaves after {round(avg_leave_gaps)} days on an average. A standard deviation of {std_in_wfh} indicates that the person is {res} likely to follow this leave pattern.', 'status':1})
+            elif len(emp_wfh_leave_duration) == 0:
+                return Response({'msg': f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has not taken any leaves.', 'status': 1})
+            else:
+                return Response({'msg': f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has taken only 1 leave. Not enough data to predict leave frequency.', 'status':1})
 
         except Exception as e:
             return Response({'error': str(e) , 'status': 0})
