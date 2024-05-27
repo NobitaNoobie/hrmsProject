@@ -229,4 +229,24 @@ DJANGO ORM-------------------------------------------------
         option 2: queryset_1 & queryset_2
         option 3: filter(Q(condition 1) & Q(condition 2))
 
-6. 
+### Date-time calculations--------------------
+
+date time object ---> string : strftime - strftime(format)
+
+string ---> date time object : strptime - datetime.strptime(date_string, format)
+
+
+datetime.strptime(string, format)------------------------------------------
+
+string = '30/01/22 23:59:59.999999'
+format = '%d/%m/%y %H:%M:%S.%f'
+
+output of strptime is an object --- datetime.datetime(2022, 1, 21, 23, 59, 59, 999999)
+
+datetimeobjectname.strftime(format)-----------------------------------------
+
+format = '%a %d %b %Y, %I:%M%p' - 'Mon 31 Jan 2022, 11:59PM'
+
+
+
+

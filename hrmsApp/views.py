@@ -34,6 +34,127 @@ def get_staff_data(emp_id):
     emp_data = Staff_data.objects.get(staff_id = emp_id)
     return emp_data
 
+# accepts a datetime argument to_day
+def get_weekday(to_day):
+    # one weekday value needs to be given, in this case from_day's weekday value is given
+    from_day_str = "1999-08-10"
+    from_day = datetime.strptime(from_day_str , "%Y-%m-%d")
+
+    diff = abs(to_day - from_day) # datetime values
+    rem = diff.days % 7
+    from_day_val = 1 # known value
+    if from_day < to_day:
+        to_day_val = (from_day_val + rem) % 7
+    else:
+        to_day_val = (from_day_val - rem) % 7
+        
+    return to_day_val
+
+def get_weekends_count(start_date , end_date):
+    #find the number of weekends between start_date and end_date
+    #NOTE:::: START DATE < END DATE ALWAYS
+            start_date_weekday = get_weekday(start_date)
+            end_date_weekday = get_weekday(end_date)
+            first_day_of_week_dayoftheweek = start_date_weekday
+            total_days = end_date - start_date #caution
+
+            div = int(total_days / 7)
+            rem = int(total_days % 7)
+
+            num_weekends = div * 2
+            
+            for i in range(rem):
+                if(first_day_of_week_dayoftheweek + i) % 7 in (5,6):
+                    num_weekends += 1
+
+            print("WEEKENDS NO.",num_weekends)
+            num_weekdays = (total_days - num_weekends)
+            print("WEEKDAYS NO.", num_weekdays)
+
+            return num_weekdays
+
+
+
+# absenteeism rate 
+# monthly absenteeism rate. month as in not 30 days duration, but 01, 02(feb),... like this
+# quarterly absenteeism rate - 3 months
+# find the increase or decrease in company-wide rate of absenteeism compared to: previous month, previous quarter,... etc(open to suggestions)
+
+# absenteeism rate = (total number of absent days for N employees) / (N * number of working days in a given time period)
+
+# N = number of employees
+
+#curent month and its comparison with the previous month
+# or, monthly -> a chart?
+
+@api_view(['GET'])
+def absenteeism_rate(request):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        # today_date_str = "2024-06-3"
+        try:
+            # NUMBER OF WEEKENDS CALCULATION --------------------------------------------------------------------------------------------
+            today_date = datetime.strptime(today_date_str, "%Y-%m-%d")
+            curr_month = today_date.month
+            curr_year = today_date.year
+
+            start_date_str = f"{str(curr_year)}-{str(curr_month)}-01"
+            print(start_date_str)
+            # now i will convert this string to datetime object to find which day of the week, the starting of the current month was
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+            start_date_weekday = get_weekday(start_date)
+            # another method is to use the builtin weekday() method of datetime, as shown below:
+            # start_date_weekday = start_date.weekday()
+            print(start_date_weekday)
+
+            #today_date_dayoftheweek = today_date.weekday()
+            today_date_dayoftheweek = get_weekday(today_date)
+
+            first_day_of_week_dayoftheweek = start_date_weekday
+
+            total_days = today_date.day 
+
+            div = int(total_days / 7)
+            rem = int(total_days % 7)
+
+            num_weekends = div * 2
+            
+            for i in range(rem):
+                if(first_day_of_week_dayoftheweek + i) % 7 in (5,6):
+                    num_weekends += 1
+
+            # if first_day_of_week_dayoftheweek == 6:
+            #     num_weekends += 2
+            # elif first_day_of_week_dayoftheweek == 5:
+            #     num_weekends += 1
+
+            #find the number of weekends in the remaining number of days
+            
+
+            print("WEEKENDS NO.",num_weekends)
+            num_weekdays = (total_days - num_weekends)
+            print("WEEKDAYS NO.", num_weekdays)
+            
+
+            #print(today_date.weekday())
+
+
+
+
+
+
+            # TOTAL NUMBER OF HOLIDAYS CALCULATIONS-------------------------------------------------------------------------------------
+            leave_data = Emp_Leave_Data.filter()
+
+
+
+
+            return Response({'status': 1})
+
+        except Exception as e:
+            return Response({'msg': str(e) , 'status':1})
+
+
 
 
 @api_view(['GET'])
@@ -52,14 +173,16 @@ def leave_rejection_rate(request, employee_id):
             emp_data = get_staff_data(employee_id)
 
             if num_leave_instances == 0:
-                return Response({'msg':f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has not taken any leaves' , 'status':1})
+                return Response({'msg':f'As of {today_date.strftime("%dth %B %Y")}, {emp_data.firstname} {emp_data.lastname} has not taken any leaves' , 'status':1})
             else:
-                return Response({'msg':f'{leave_rej_rate}% of {emp_data.firstname} {emp_data.lastname}\'s leaves have been rejected.' , 'status':1})
+                return Response({'msg':f'As of {today_date.strftime("%dth %B %Y")}, {leave_rej_rate}% of {emp_data.firstname} {emp_data.lastname}\'s leaves have been rejected.' , 'status':1})
             
 
         except Exception as e:
             return Response({'msg': str(e), 'status': 0})
 
+
+# improve the below api later, find out how to compare date-time field with date field and document it for future reference.
 
 @api_view(['GET'])
 def planned_unplanned_percentage(request, employee_id):
@@ -67,8 +190,10 @@ def planned_unplanned_percentage(request, employee_id):
         today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
         try:
             today_date = datetime.strptime(today_date_str, "%Y-%m-%d").date()
-            count_total_leave_instances = count_leave_instances_till_date(today_date, employee_id)
-            planned_leaves = Emp_Leave_Data.objects.filter()
+            count_total_leave_instances = count_all_leave_instances(employee_id)
+            count_planned_leaves = Emp_Leave_Data.objects.filter(emp_id = employee_id, leave_from__gte = 'date_of_request'.date()).count()
+            planned_leave_percent = (count_planned_leaves*100)/count_all_leave_instances
+            unplanned_leave_percent = 100 - planned_leave_percent
             return Response({'msg':'' , 'status':1})
         except Exception as e:
             return Response({'msg': str(e) , 'status': 0})
@@ -130,9 +255,9 @@ def wfh_frequency(request, employee_id):
             if len(emp_wfh_leave_duration) > 1:
                 return Response({'msg': f'{emp_data.firstname} {emp_data.lastname} takes WFH after {round(avg_leave_gaps)} days on an average. A standard deviation of {std_in_wfh} indicates that the person is {res} likely to follow this WFH pattern.', 'status':1})
             elif len(emp_wfh_leave_duration) == 0:
-                return Response({'msg': f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has not taken any WFH', 'status': 1})
+                return Response({'msg': f'As of {today_date.strftime("%dth %B %Y")}, {emp_data.firstname} {emp_data.lastname} has not taken any WFH', 'status': 1})
             else:
-                return Response({'msg': f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has taken only 1 WFH. Not enough data to predict leave frequency.', 'status':1})
+                return Response({'msg': f'As of {today_date.strftime("%dth %B %Y")}, {emp_data.firstname} {emp_data.lastname} has taken only 1 WFH. Not enough data to predict leave frequency.', 'status':1})
 
         except Exception as e:
             return Response({'error': str(e) , 'status': 0})
@@ -191,9 +316,9 @@ def leave_frequency(request, employee_id):
             if len(emp_wfh_leave_duration) > 1:
                 return Response({'msg': f'{emp_data.firstname} {emp_data.lastname} takes leaves after {round(avg_leave_gaps)} days on an average. A standard deviation of {std_in_wfh} indicates that the person is {res} likely to follow this leave pattern.', 'status':1})
             elif len(emp_wfh_leave_duration) == 0:
-                return Response({'msg': f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has not taken any leaves.', 'status': 1})
+                return Response({'msg': f'As of {today_date.strftime("%dth %B %Y")}, {emp_data.firstname} {emp_data.lastname} has not taken any leaves.', 'status': 1})
             else:
-                return Response({'msg': f'As of {today_date}, {emp_data.firstname} {emp_data.lastname} has taken only 1 leave. Not enough data to predict leave frequency.', 'status':1})
+                return Response({'msg': f'As of {today_date.strftime("%dth %B %Y")}, {emp_data.firstname} {emp_data.lastname} has taken only 1 leave. Not enough data to predict leave frequency.', 'status':1})
 
         except Exception as e:
             return Response({'error': str(e) , 'status': 0})
