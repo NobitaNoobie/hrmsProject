@@ -56,7 +56,7 @@ def get_weekends_count(start_date , end_date):
             start_date_weekday = get_weekday(start_date)
             end_date_weekday = get_weekday(end_date)
             first_day_of_week_dayoftheweek = start_date_weekday
-            total_days = end_date - start_date #caution
+            total_days = (end_date - start_date).days + 1 #caution
 
             div = int(total_days / 7)
             rem = int(total_days % 7)
@@ -67,11 +67,16 @@ def get_weekends_count(start_date , end_date):
                 if(first_day_of_week_dayoftheweek + i) % 7 in (5,6):
                     num_weekends += 1
 
-            print("WEEKENDS NO.",num_weekends)
+            # print("WEEKENDS NO.",num_weekends)
             num_weekdays = (total_days - num_weekends)
-            print("WEEKDAYS NO.", num_weekdays)
+            # print("WEEKDAYS NO.", num_weekdays)
 
-            return num_weekdays
+            # # Exclude holidays from weekdays
+            # for holiday in holidays:
+            #     if start_date <= holiday <= end_date and holiday.weekday() not in (5, 6):
+            #         num_weekdays -= 1
+
+            return num_weekends
 
 
 
@@ -102,10 +107,15 @@ def absenteeism_rate(request):
             print(start_date_str)
             # now i will convert this string to datetime object to find which day of the week, the starting of the current month was
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+
+            count = get_weekends_count(start_date , today_date)
+            print('Number of weekends in the month:', count)
+
+
             start_date_weekday = get_weekday(start_date)
             # another method is to use the builtin weekday() method of datetime, as shown below:
             # start_date_weekday = start_date.weekday()
-            print(start_date_weekday)
+            print('Start day of the month weekday',start_date_weekday)
 
             #today_date_dayoftheweek = today_date.weekday()
             today_date_dayoftheweek = get_weekday(today_date)
@@ -144,12 +154,32 @@ def absenteeism_rate(request):
 
 
             # TOTAL NUMBER OF HOLIDAYS CALCULATIONS-------------------------------------------------------------------------------------
-            leave_data = Emp_Leave_Data.filter()
+            total_leave_count = 0
+            leave_data = Emp_Leave_Data.objects.filter(
+                leave_to__gte=start_date,
+                leave_from__lte=today_date
+            )
+            print('Query set generated. The number of objects fetched:', len(leave_data))
 
+            for leave in leave_data:
+                leave_f = datetime.combine(leave.leave_from, datetime.min.time())
+                leave_start_date = max(leave_f, start_date) 
+                #print(leave_start_date)
 
+                leave_t = datetime.combine(leave.leave_to, datetime.min.time())
+                leave_end_date = min(leave_t, today_date)  # Only consider up to today
+                #print(leave_end_date)
+            
+                leave_days = (leave_end_date - leave_start_date).days + 1
+                num_weekends = get_weekends_count(leave_start_date, leave_end_date)
+                leave_days -= num_weekends
+                total_leave_count += leave_days
 
-
-            return Response({'status': 1})
+            print("Total companywide leaves in the current month = ", total_leave_count, " days")
+            count_total_employees = len(Staff_data.objects.all())
+            #count_total_employees = 
+            absent_rate = round((total_leave_count * 100)/(count_total_employees * num_weekdays) , 2)
+            return Response({'msg':f'The absenteeism rate for {today_date.month} is {absent_rate}%', 'status': 1})
 
         except Exception as e:
             return Response({'msg': str(e) , 'status':1})

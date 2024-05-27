@@ -10,26 +10,42 @@ weekdays = {
         6: "Sunday"
     }
 
-def get_weekday(to_day):
-    # one weekday value needs to be given, in this case from_day's weekday value is given
-    from_day_str = "1999-08-10"
-    from_day = datetime.strptime(from_day_str , "%Y-%m-%d")
+def get_weekends_count(start_date , end_date, holidays):
+    #find the number of weekends between start_date and end_date
+    #NOTE:::: START DATE < END DATE ALWAYS
+            start_date_weekday = start_date.weekday()
+            end_date_weekday = end_date.weekday()
+            first_day_of_week_dayoftheweek = start_date_weekday
+            total_days = (end_date - start_date) #caution
 
-    diff = abs(to_day - from_day) # datetime values
-    rem = diff.days % 7
-    from_day_val = 1 #known value
-    if from_day < to_day:
-        to_day_val = (from_day_val + rem) % 7
-    else:
-        to_day_val = (from_day_val - rem) % 7
-        
-    return to_day_val
+            div = total_days // 7
+            rem = total_days % 7
+
+            num_weekends = div * 2
+            
+            for i in range(rem):
+                if(first_day_of_week_dayoftheweek + i) % 7 in (5,6):
+                    num_weekends += 1
+
+            print("WEEKENDS NO.",num_weekends)
+            num_weekdays = (total_days - num_weekends)
+            print("WEEKDAYS NO.", num_weekdays)
+
+            # Exclude holidays from weekdays
+            for holiday in holidays:
+                if start_date <= holiday <= end_date and holiday.weekday() not in (5, 6):
+                    num_weekdays -= 1
+
+            return num_weekdays
 
 # Input
 from_day_str = input("Enter the date (YYYY-MM-DD): ")
-
-
-# input strings to datetime objects
 from_day = datetime.strptime(from_day_str, "%Y-%m-%d")
-to_day_weekday = get_weekday(from_day)
-print(f"The weekday for the end date is: {to_day_weekday} {weekdays.get(to_day_weekday)}(0=Monday, 6=Sunday)")
+
+# Input
+to_day_str = input("Enter the date (YYYY-MM-DD): ")
+to_day = datetime.strptime(to_day_str, "%Y-%m-%d")
+
+holi = [from_day_str]
+
+print(get_weekends_count(from_day , to_day, holi))
