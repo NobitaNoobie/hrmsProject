@@ -36,8 +36,9 @@ def get_staff_data(emp_id):
 
 # accepts a datetime argument to_day
 def get_weekday(to_day):
+    #self-defined function
     # one weekday value needs to be given, in this case from_day's weekday value is given
-    from_day_str = "1999-08-10"
+    from_day_str = "1999-08-10" #my birthday
     from_day = datetime.strptime(from_day_str , "%Y-%m-%d")
 
     diff = abs(to_day - from_day) # datetime values
@@ -51,6 +52,7 @@ def get_weekday(to_day):
     return to_day_val
 
 def get_weekends_count(start_date , end_date):
+            #self-defined function tiyasa khan
     #find the number of weekends between start_date and end_date
     #NOTE:::: START DATE < END DATE ALWAYS
             start_date_weekday = get_weekday(start_date)
@@ -179,10 +181,21 @@ def absenteeism_rate(request):
             count_total_employees = len(Staff_data.objects.all())
             #count_total_employees = 
             absent_rate = round((total_leave_count * 100)/(count_total_employees * num_weekdays) , 2)
-            return Response({'msg':f'The absenteeism rate for {today_date.month} is {absent_rate}%', 'status': 1})
+            return Response({'msg':f"The absenteeism rate for {today_date.strftime('%B')} is {absent_rate}%", 'status': 1})
 
         except Exception as e:
             return Response({'msg': str(e) , 'status':1})
+        
+
+@api_view(['GET'])
+def absenteeism_rate_monthly (request, month_val):
+    try:
+        curr_month_val = month_val #integer value for months, ranging from Jan(1) to Dec(12)
+
+
+        return Response({'status': 1})
+    except Exception as e:
+        return Response({'msg': str(e) , 'status':0})
 
 
 
