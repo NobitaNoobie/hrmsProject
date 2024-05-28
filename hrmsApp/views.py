@@ -161,6 +161,7 @@ def absenteeism_rate(request):
                 leave_to__gte=start_date,
                 leave_from__lte=today_date
             )
+            
             print('Query set generated. The number of objects fetched:', len(leave_data))
 
             for leave in leave_data:
@@ -187,16 +188,113 @@ def absenteeism_rate(request):
             return Response({'msg': str(e) , 'status':1})
         
 
+def monthly_absent_rate(month_val, year_val):
+            curr_month_val = month_val #MM integer value for months, ranging from Jan(1) to Dec(12)
+            curr_year_val = year_val #YYYY
+            
+            day1 = datetime.strptime(f"{curr_year_val}-{curr_month_val}-01", "%Y-%m-%d") #converting 1st day of curr_month into datetime object
+            print('start day of curr month = ', day1)
+            if curr_month_val == 12:
+                day2 = datetime.strptime(f"{curr_year_val+1}-01-01", "%Y-%m-%d")
+            else:
+                day2 = datetime.strptime(f"{curr_year_val}-{curr_month_val+1}-01", "%Y-%m-%d") #converting 1st day of NEXT month into datetime object
+            print('start day of next month = ',day2)
+            total_days_in_month = (day2 - day1).days #number of days in the given month
+            print('total days in month = ', total_days_in_month)
+            print(get_weekends_count(day1, day2))
+            num_working_days_in_month = total_days_in_month - get_weekends_count(day1, day2)
+            print('number of working days in month = ', num_working_days_in_month)
+
+            companywide_absents_in_month = Emp_Leave_Data.objects.filter(leave_to__gte = day1, leave_from__lte = day2)
+            companywide_absents_in_month_count = 0
+
+            for leave in companywide_absents_in_month:
+                #someone might take a leave from 29/4/2024 to 3/5/2024
+                #in this case 2 leaves are in the month of April and rest 3 leaves are in the month of May
+                #we need to correctly handle this edge case, where we define leave_start date and leave_end_date
+                #in this case to correctly calculate the number of leaves in May, the leave_start_date = 1/5/2024
+                leave_f = datetime.combine(leave.leave_from, datetime.min.time())
+                leave_start_date = max(leave_f, day1)  
+                print(leave_start_date)
+
+                leave_t = datetime.combine(leave.leave_to, datetime.min.time())
+                leave_end_date = min(leave_t, day2) 
+                print(leave_end_date)
+                #------------------------------------------------------------------------------------------------
+
+                #find number of days elapsed between leave_start_date and leave_end_date
+                #we need to subtract the number of weekends between leave_start_date and leave_end_date, because we don't want to...
+                #...include weekends in our leave days
+                days_between = (leave_end_date - leave_start_date).days + 1
+                print('days between = ', days_between)
+                weekends_between = get_weekends_count(leave_start_date, leave_end_date)
+                leaves_between = days_between - weekends_between
+                companywide_absents_in_month_count += leaves_between
+            
+            print(f'company wide absent days in {curr_month_val} = ',companywide_absents_in_month_count)
+            num_employees = len(Staff_data.objects.all())
+            #absent_rate, even though a variable in the ifelse block, has a scope global to the function.
+            #scopes within ifelse blocks dont count as local, as it would have in other programming languages, like JAVA
+            if num_employees > 0 & num_working_days_in_month == 0:
+                absent_rate = round(((companywide_absents_in_month_count * 100) / (num_employees * num_working_days_in_month)) , 2)
+            else:
+                absent_rate = 0
+
+            return absent_rate
+        
+
 @api_view(['GET'])
-def absenteeism_rate_monthly (request, month_val):
-    try:
-        curr_month_val = month_val #integer value for months, ranging from Jan(1) to Dec(12)
+def absenteeism_rate_monthly (request, month_val, year_val):
+    if request.method == 'GET':
+        try:
+            curr_month_val = month_val #MM integer value for months, ranging from Jan(1) to Dec(12)
+            curr_year_val = year_val #YYYY
+            day1 = datetime.strptime(f"{curr_year_val}-{curr_month_val}-01", "%Y-%m-%d")
+
+            curr_absent_rate = monthly_absent_rate(month_val, year_val)
+
+            return Response({'msg':f"The absenteeism rate for the month of {day1.strftime('%B')} is {curr_absent_rate}%", 'status': 1})
+        except Exception as e:
+            return Response({'msg': str(e) , 'status':0})
 
 
-        return Response({'status': 1})
-    except Exception as e:
-        return Response({'msg': str(e) , 'status':0})
+@api_view(['GET'])
+def absenteeism_rate_list(request, year):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        try: 
+            today_date = datetime.strptime(today_date_str , "%Y-%m-%d")
+            curr_month = today_date.month
+            curr_year = today_date.year
+    
+            if year == curr_year:
+                absent_rate_list = []
+                #for i in range(1,5) -> for(int i=1, i<5, i++)
+                for month in range(1,curr_month+1):
+                    curr_absent_rate = monthly_absent_rate(month, curr_year)
+                    absent_rate_list.append({
+                        'month': month,
+                        'rate': curr_absent_rate,
+                    })
+                return Response({'msg':f'List of monthly absenteeism rates for the year {curr_year}', 'list': f'{absent_rate_list}', 'status':1})
+            
+            elif year < curr_year:
+                absent_rate_list = []
+                #for i in range(1,5) -> for(int i=1, i<5, i++)
+                for month in range(1, 13):
+                    curr_absent_rate = monthly_absent_rate(month, year)
+                    absent_rate_list.append({
+                        'month': month,
+                        'rate': curr_absent_rate,
+                    })
+                return Response({'msg':f'List of monthly absenteeism rates for the year {year}', 'list': f'{absent_rate_list}', 'status':1})
 
+            else:
+                return Response({'msg':'Invalid year', 'status': 0})
+            
+        except Exception as e:
+            return Response({'msg':str(e) , 'status':0})
+            
 
 
 

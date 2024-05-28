@@ -13,5 +13,7 @@ urlpatterns = [
     path("wfh_frequency/<str:employee_id>/", views.wfh_frequency, name='wfh_frequency'),
     path("leave_frequency/<str:employee_id>/", views.leave_frequency, name='leave_frequency'),
     path("leave_rejection_rate/<str:employee_id>/", view=views.leave_rejection_rate, name='leave_rejection_rate'),
-    path("absenteeism_rate/", views.absenteeism_rate, name="absenteeism_rate")
+    path("absenteeism_rate/", views.absenteeism_rate, name="absenteeism_rate"),
+    path("absenteeism_rate_monthly/<int:month_val>/<int:year_val>/", views.absenteeism_rate_monthly ,name="absenteeism_rate_monthly"),
+    path("absenteeism_rate_list/<int:year>/", view= views.absenteeism_rate_list, name='absenteeism_rate_list'),
 ]

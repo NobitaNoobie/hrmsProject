@@ -248,5 +248,7 @@ datetimeobjectname.strftime(format)-----------------------------------------
 format = '%a %d %b %Y, %I:%M%p' - 'Mon 31 Jan 2022, 11:59PM'
 
 
+## Python variables are scoped to the innermost function, class, or module in which they're assigned. Control blocks like if and while blocks don't count, so a variable assigned inside an if is still scoped to a function, class, or module.
 
+(Implicit functions defined by a generator expression or list/set/dict comprehension do count, as do lambda expressions. You can't stuff an assignment statement into any of those, but lambda parameters and for clause targets are implicit assignment.)
 
