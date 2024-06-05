@@ -16,4 +16,5 @@ urlpatterns = [
     path("absenteeism_rate/", views.absenteeism_rate, name="absenteeism_rate"),
     path("absenteeism_rate_monthly/<int:month_val>/<int:year_val>/", views.absenteeism_rate_monthly ,name="absenteeism_rate_monthly"),
     path("absenteeism_rate_list/<int:year>/", view= views.absenteeism_rate_list, name='absenteeism_rate_list'),
+    path("num_absentees_future/", views.num_absentees_future, name="num_absentees_future"),
 ]

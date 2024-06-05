@@ -253,10 +253,31 @@ def absenteeism_rate_monthly (request, month_val, year_val):
 
             curr_absent_rate = monthly_absent_rate(month_val, year_val)
 
-            return Response({'msg':f"The absenteeism rate for the month of {day1.strftime('%B')} is {curr_absent_rate}%", 'status': 1})
+            prev_month_val = (month_val - 1) if curr_month_val > 1 else 12
+            prev_year_val = year_val if curr_month_val > 1 else year_val - 1
+            prev_absent_rate = monthly_absent_rate(prev_month_val, prev_year_val)
+
+            diff = round((prev_absent_rate - curr_absent_rate) , 2)
+
+            return Response({'msg':f"The absenteeism rate for the month of {day1.strftime('%B')} is {curr_absent_rate}%, which is {'greater' if diff<0 else 'lower'} than the last month by {diff}%", 'status': 1})
         except Exception as e:
             return Response({'msg': str(e) , 'status':0})
 
+
+month_val = {
+    1: 'Januray',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'August',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December'
+}    
 
 @api_view(['GET'])
 def absenteeism_rate_list(request, year):
@@ -273,29 +294,67 @@ def absenteeism_rate_list(request, year):
                 for month in range(1,curr_month+1):
                     curr_absent_rate = monthly_absent_rate(month, curr_year)
                     absent_rate_list.append({
-                        'month': month,
-                        'rate': curr_absent_rate,
+                        'month': month_val.get(month),
+                        'rate': f'{curr_absent_rate} %',
                     })
-                return Response({'msg':f'List of monthly absenteeism rates for the year {curr_year}', 'list': f'{absent_rate_list}', 'status':1})
-            
+                response_data = {
+                    f'Monthly rate of absenteeism for the year {year}:': absent_rate_list,
+                }
+                return Response({'msg': response_data, 'status':1})
+                        
             elif year < curr_year:
                 absent_rate_list = []
                 #for i in range(1,5) -> for(int i=1, i<5, i++)
                 for month in range(1, 13):
                     curr_absent_rate = monthly_absent_rate(month, year)
                     absent_rate_list.append({
-                        'month': month,
+                        'month': month_val.get(month),
                         'rate': curr_absent_rate,
                     })
-                return Response({'msg':f'List of monthly absenteeism rates for the year {year}', 'list': f'{absent_rate_list}', 'status':1})
+
+                response_data = {
+                    f'Monthly rate of absenteeism for the year {year}: ': absent_rate_list,
+                }
+                return Response({'msg': response_data, 'status':1})
+                #return Response({'msg':f'List of monthly absenteeism rates for the year {curr_year}', 'list': f'{absent_rate_list}', 'status':1})
 
             else:
                 return Response({'msg':'Invalid year', 'status': 0})
+
             
         except Exception as e:
             return Response({'msg':str(e) , 'status':0})
             
-
+@api_view(['GET'])
+def num_absentees_future(request):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        try:
+            today_date = datetime.strptime(today_date_str , "%Y-%m-%d").date()
+            currmonth = today_date.month
+            curryear = today_date.year
+            if currmonth == 1 | currmonth == 3 | currmonth == 5 | currmonth == 7 | currmonth == 8 | currmonth == 10 | currmonth == 12:
+                end_date_str = f"{curryear}-{currmonth}-31"
+            elif currmonth == 2:
+                if curryear % 4 == 0:
+                    end_date_str = f"{curryear}-{currmonth}-29"
+                else:
+                    end_date_str = f"{curryear}-{currmonth}-28"
+            else:
+                end_date_str = f"{curryear}-{currmonth}-30"
+            print(end_date_str)
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            leave_instances = Emp_Leave_Data.objects.filter(leave_from__lte = end_date , leave_to__gte = today_date)
+            print(len(leave_instances))
+            arr = []
+            for leave in leave_instances:
+                if arr.__contains__(leave.emp_id) == False:
+                    arr.append(leave.emp_id)
+            num = len(arr)
+            
+            return Response({'msg': f"Upcoming number of absentees in {month_val.get(currmonth)} is: {num}",'status': 1})
+        except Exception as e:
+            return Response({'msg': str(e) , 'status':0})
 
 
 @api_view(['GET'])
