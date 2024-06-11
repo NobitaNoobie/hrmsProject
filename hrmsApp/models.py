@@ -75,4 +75,3 @@ class LeaveApplication(models.Model):
 
     class Meta:
         db_table = 'hrms_leaveapplication'
-    

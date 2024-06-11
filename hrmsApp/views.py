@@ -22,6 +22,13 @@ from django.db.models import DateField
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
+from .forms import UserInfoForm
+
+def regform(request):
+    form = UserInfoForm()
+    context = {'form':form}
+    return render(request, "hrmsApp/index.html", context=context)
+
 def count_leave_instances_till_date(date, emp_id):
     leave_instances_count = Emp_Leave_Data.objects.filter(emp_id = emp_id , leave_from__lte = date).count()
     return leave_instances_count
@@ -329,8 +336,10 @@ def absenteeism_rate_list(request, year):
 def num_absentees_future(request):
     if request.method == 'GET':
         today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        print(today_date_str)
         try:
             today_date = datetime.strptime(today_date_str , "%Y-%m-%d").date()
+
             currmonth = today_date.month
             curryear = today_date.year
             if currmonth == 1 | currmonth == 3 | currmonth == 5 | currmonth == 7 | currmonth == 8 | currmonth == 10 | currmonth == 12:
@@ -599,6 +608,7 @@ def num_employees_on_leave_on_day(request, date):
 @api_view(['GET'])
 def num_employees_on_leave_today(request):
     if request.method == 'GET':
+        print("request receivedddddd")
         today_date_str = request.GET.get('date', str(date.today())) #parameter is today's date by default
 
         try: 
@@ -608,20 +618,21 @@ def num_employees_on_leave_today(request):
             #you can generate the SQL query by doing .query on the query set. 
             print(employees_on_leave_query_set.query)
             employee_count = employees_on_leave_query_set.count()
-            list_of_employees_on_leave = Staff_data.objects.filter(staff_id__in = employees_on_leave_query_set.values("emp_id")).distinct()
+            # list_of_employees_on_leave = Staff_data.objects.filter(staff_id__in = employees_on_leave_query_set.values("emp_id")).distinct()
 
-            employees_on_leave_data_array = []
-            for employee in list_of_employees_on_leave:
-                employee_info = {
-                    "Staff id": employee.staff_id,
-                    "Name": f"{employee.firstname} {employee.lastname}"
-                }
-                employees_on_leave_data_array.append(employee_info)
+            # employees_on_leave_data_array = []
+            # for employee in list_of_employees_on_leave:
+            #     employee_info = {
+            #         "Staff id": employee.staff_id,
+            #         "Name": f"{employee.firstname} {employee.lastname}"
+            #     }
+            #     employees_on_leave_data_array.append(employee_info)
 
-            response_data = {
-                "Number of employees on leave today": employee_count,
-                "List of employees on leave today: ": employees_on_leave_data_array}
-            return Response({"msg": response_data, "status":1})
+            # response_data = {
+            #     "Number of employees on leave today": employee_count,
+            #     "List of employees on leave today: ": employees_on_leave_data_array}
+            print({employee_count})
+            return Response({"msg": f"Number of employees on leave today: {employee_count}", "status":1})
         except Exception as e:
             return Response({'error':str(e) , "status":0})
 

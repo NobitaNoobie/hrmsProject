@@ -7,6 +7,14 @@
 
 <h1>Welcome, Employee {{ employee_id }}</h1>
 
+<div class="container">
+    <h1>Form</h1>
+    <form>
+        {% csrf_token %}
+        <div class ="form-group">Employee id: {{form.staff_id}}</div>
+    </form>
+</div>
+
 <h2>Apply for Leave</h2>
 
 <form method="post">
