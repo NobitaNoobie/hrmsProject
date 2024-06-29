@@ -6,8 +6,8 @@ from rest_framework.response import Response
 
 from django.shortcuts import render, redirect
 from django.utils import timezone
-from django.db.models import Q, DateField
-from datetime import date
+from django.db.models import Q, DateField, F
+from datetime import date, timedelta
 from .models import Emp_Leave_Data, Staff_data
 
 from .models import LeaveApplication
@@ -189,11 +189,12 @@ def absenteeism_rate(request):
             count_total_employees = len(Staff_data.objects.all())
             #count_total_employees = 
             absent_rate = round((total_leave_count * 100)/(count_total_employees * num_weekdays) , 2)
-            return Response({'msg':f"The absenteeism rate for {today_date.strftime('%B')} is {absent_rate}%", 'status': 1})
+            # return Response({'msg':f"The absenteeism rate for {today_date.strftime('%B')} is {absent_rate}%", 'status': 1})
+            return Response({'msg':absent_rate, 'status': 1})
 
         except Exception as e:
             return Response({'msg': str(e) , 'status':1})
-        
+
 
 def monthly_absent_rate(month_val, year_val):
             curr_month_val = month_val #MM integer value for months, ranging from Jan(1) to Dec(12)
@@ -266,7 +267,25 @@ def absenteeism_rate_monthly (request, month_val, year_val):
 
             diff = round((prev_absent_rate - curr_absent_rate) , 2)
 
-            return Response({'msg':f"The absenteeism rate for the month of {day1.strftime('%B')} is {curr_absent_rate}%, which is {'greater' if diff<0 else 'lower'} than the last month by {diff}%", 'status': 1})
+            return Response({'msg':f"The absenteeism rate for the month of {day1.strftime('%B')} is {curr_absent_rate}%, which is {'greater' if diff > 0 else 'lower'} than the last month by {diff}%", 'status': 1})
+        except Exception as e:
+            return Response({'msg': str(e) , 'status':0})
+        
+@api_view(['GET'])
+def absenteeism_rate_relative (request, month_val, year_val):
+    if request.method == 'GET':
+        try:
+            curr_month_val = month_val #MM integer value for months, ranging from Jan(1) to Dec(12)
+            curr_year_val = year_val #YYYY
+            curr_absent_rate = monthly_absent_rate(month_val, year_val)
+
+            prev_month_val = (month_val - 1) if curr_month_val > 1 else 12
+            prev_year_val = year_val if curr_month_val > 1 else year_val - 1
+            prev_absent_rate = monthly_absent_rate(prev_month_val, prev_year_val)
+
+            diff = round((prev_absent_rate - curr_absent_rate) , 2)
+
+            return Response({'msg':f"{diff} % than last month",'diff': diff, 'status': 1})
         except Exception as e:
             return Response({'msg': str(e) , 'status':0})
 
@@ -285,6 +304,31 @@ month_val = {
     11: 'November',
     12: 'December'
 }    
+
+
+@api_view(['GET'])
+def num_employees_on_leave_monthly(request):
+    if request.method == 'GET':
+        today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
+        print("TODAYYYYYY", today_date_str)
+        try:
+            today_date = datetime.strptime(today_date_str, '%Y-%m-%d')
+            curr_month = today_date.month
+            emp_list = Emp_Leave_Data.objects.filter(leave_to__month__gte = curr_month , leave_from__month__lte = curr_month).values("emp_id")
+            num = emp_list.distinct().count()
+            print(emp_list)
+            staff_detail_list = Staff_data.objects.filter(staff_id__in = emp_list.values("emp_id")).distinct()
+            staff_details_list_arr = []
+            for emp in staff_detail_list:
+                employee_info = {
+                    'Staff_Id': emp.staff_id,
+                    'Name': f"{emp.firstname} {emp.lastname}"
+                }
+                staff_details_list_arr.append(employee_info)
+
+            return Response({'msg': num, 'list':staff_details_list_arr, 'status': 1})
+        except Exception as e:
+            return Response({'msg': str(e), 'status': 0})
 
 @api_view(['GET'])
 def absenteeism_rate_list(request, year):
@@ -361,7 +405,8 @@ def num_absentees_future(request):
                     arr.append(leave.emp_id)
             num = len(arr)
             
-            return Response({'msg': f"Upcoming number of absentees in {month_val.get(currmonth)} is: {num}",'status': 1})
+            # return Response({'msg': f"Upcoming number of absentees in {month_val.get(currmonth)} is: {num}",'status': 1})
+            return Response({'msg': num,'status': 1})
         except Exception as e:
             return Response({'msg': str(e) , 'status':0})
 
@@ -406,7 +451,30 @@ def planned_unplanned_percentage(request, employee_id):
             return Response({'msg':'' , 'status':1})
         except Exception as e:
             return Response({'msg': str(e) , 'status': 0})
+        
+def unplanned_leaves_count():
+    total_leaves = Emp_Leave_Data.objects.all().count()
+    count_unplanned_leaves = round(Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(leave_from__lte=F('request_date')).count() / total_leaves * 100)
+    count_planned_leaves = round((100 - count_unplanned_leaves))
+    return [count_unplanned_leaves , count_planned_leaves]
+        
+@api_view(['GET'])
+def planned_leaves(request):
+    if request.method == 'GET':
+        try:
+            count_planned_leaves = unplanned_leaves_count()[1]
+            return Response({'msg': count_planned_leaves , 'status': 1})
+        except Exception as e:
+            return Response({'msg': str(e) , 'status': 0})
 
+@api_view(['GET'])
+def unplanned_leaves(request):
+    if request.method == 'GET':
+        try:
+            count_unplanned_leaves = unplanned_leaves_count()[0]
+            return Response({'msg': count_unplanned_leaves , 'status': 1})
+        except Exception as e:
+            return Response({'msg': str(e) , 'status': 0})
 
 @api_view(['GET'])
 def wfh_frequency(request, employee_id):
@@ -560,14 +628,31 @@ def leave_applications_on_date(request, date):
 def leave_applications_on_today(request):
     if request.method == 'GET':
         today_date_str = request.GET.get('date', datetime.today().strftime('%Y-%m-%d'))
-        
         try:
             today_date = datetime.strptime(today_date_str, "%Y-%m-%d").date()
+            print('today ', today_date)
+            #week_before_date = (today_date - 7)
+            #use timedelta to subtract 7, do not directly subtract 7 because date type will not be compatible with int type
+            week_before_date = today_date - timedelta(days=7)
+            print("week before ", week_before_date)
             leave_count = Emp_Leave_Data.objects.annotate(request_date=Cast('date_of_request', DateField())).filter(request_date=today_date).count()
+            leave_count_last_week = Emp_Leave_Data.objects.annotate(request_date = Cast('date_of_request', DateField())).filter(request_date__gte = week_before_date , request_date__lt = today_date).count()
+            diff = leave_count - leave_count_last_week
 
-            return Response({'employees applied for leave today': leave_count, "status": 1})
+            #list of leave applications today
+            leave_applications_list = Emp_Leave_Data.objects.annotate(request_date = Cast('date_of_request', DateField())).filter(request_date = today_date)
+            staff_leave_applications = Staff_data.objects.filter(staff_id__in = leave_applications_list.values("emp_id")).distinct()
+            staff_leave_applications_arr = []
+            for emp in staff_leave_applications:
+                employee_info = {
+                    'Staff_id': emp.staff_id,
+                    'Name': f"{emp.firstname} {emp.lastname}"
+                }
+                staff_leave_applications_arr.append(employee_info)
+            
+            return Response({"msg": leave_count, 'diff':diff , 'list': staff_leave_applications_arr ,"status": 1})
         except Exception as e:
-            return Response({'error': str(e), "status": 0})
+            return Response({'error': str(e), "status": 0})            
 
 
 @api_view(['GET'])
@@ -591,16 +676,17 @@ def num_employees_on_leave_on_day(request, date):
             employee_data = []
             for employee in list_of_employees_on_leave:
                 employee_info = {
-                    'Staff Id': employee.staff_id,
+                    'Staff_Id': employee.staff_id,
                     'Name': f"{employee.firstname} {employee.lastname}"
                 }
                 employee_data.append(employee_info)
  
-            response_data = {
-                f'Number of employees on leave on {today_date}': num_employees,
-                f'List of employees on leave on {today_date}': employee_data
-            }
-            return Response({"msg": response_data , "status":1})
+            # response_data = {
+            #     f'Number of employees on leave on {today_date}': num_employees,
+            #     f'List of employees on leave on {today_date}': employee_data
+            # }
+            # return Response({"msg": response_data , "status":1})
+            return Response({"msg": num_employees , 'list':employee_data, "status":1})
         except Exception as e:
             return Response({"error":str(e), "status":0})
 
@@ -618,21 +704,21 @@ def num_employees_on_leave_today(request):
             #you can generate the SQL query by doing .query on the query set. 
             print(employees_on_leave_query_set.query)
             employee_count = employees_on_leave_query_set.count()
-            # list_of_employees_on_leave = Staff_data.objects.filter(staff_id__in = employees_on_leave_query_set.values("emp_id")).distinct()
-
-            # employees_on_leave_data_array = []
-            # for employee in list_of_employees_on_leave:
-            #     employee_info = {
-            #         "Staff id": employee.staff_id,
-            #         "Name": f"{employee.firstname} {employee.lastname}"
-            #     }
-            #     employees_on_leave_data_array.append(employee_info)
+            list_of_employees_on_leave = Staff_data.objects.filter(staff_id__in = employees_on_leave_query_set.values("emp_id")).distinct()
+            employees_on_leave_data_array = []
+            for employee in list_of_employees_on_leave:
+                 employee_info = {
+                     "Staff_id": employee.staff_id,
+                     "Name": f"{employee.firstname} {employee.lastname}"
+                 }
+                 employees_on_leave_data_array.append(employee_info)
 
             # response_data = {
             #     "Number of employees on leave today": employee_count,
             #     "List of employees on leave today: ": employees_on_leave_data_array}
             print({employee_count})
-            return Response({"msg": f"Number of employees on leave today: {employee_count}", "status":1})
+            # return Response({"msg": f"Number of employees on leave today: {employee_count}", "status":1})
+            return Response({"msg": employee_count, 'list': employees_on_leave_data_array, "status":1})
         except Exception as e:
             return Response({'error':str(e) , "status":0})
 

@@ -17,5 +17,9 @@ urlpatterns = [
     path("absenteeism_rate_monthly/<int:month_val>/<int:year_val>/", views.absenteeism_rate_monthly ,name="absenteeism_rate_monthly"),
     path("absenteeism_rate_list/<int:year>/", view= views.absenteeism_rate_list, name='absenteeism_rate_list'),
     path("num_absentees_future/", views.num_absentees_future, name="num_absentees_future"),
-    path("regform/", views.regform, name="regform")
+    path("regform/", views.regform, name="regform"),
+    path("planned_leaves/", views.planned_leaves, name="planned_leaves"),
+    path("unplanned_leaves/", views.unplanned_leaves, name="unplanned_leaves"),
+    path("num_employees_on_leave_monthly/", views.num_employees_on_leave_monthly, name="num_employees_on_leave_monthly"),
+    path("absenteeism_rate_relative/<int:month_val>/<int:year_val>/", views.absenteeism_rate_relative, name='absenteeism_rate_relative'),
 ]
