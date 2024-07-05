@@ -184,13 +184,18 @@ def absenteeism_rate(request):
                 num_weekends = get_weekends_count(leave_start_date, leave_end_date)
                 leave_days -= num_weekends
                 total_leave_count += leave_days
+                
 
             print("Total companywide leaves in the current month = ", total_leave_count, " days")
             count_total_employees = len(Staff_data.objects.all())
-            #count_total_employees = 
-            absent_rate = round((total_leave_count * 100)/(count_total_employees * num_weekdays) , 2)
+            print(count_total_employees)
+            if count_total_employees * num_weekdays > 0:
+                absent_rate = round((total_leave_count * 100)/(count_total_employees * num_weekdays) , 2)
+                return Response({'msg':absent_rate, 'status': 1})
+            else:
+                return Response({'msg':'Division by 0', 'status':0})
             # return Response({'msg':f"The absenteeism rate for {today_date.strftime('%B')} is {absent_rate}%", 'status': 1})
-            return Response({'msg':absent_rate, 'status': 1})
+            
 
         except Exception as e:
             return Response({'msg': str(e) , 'status':1})
@@ -241,6 +246,8 @@ def monthly_absent_rate(month_val, year_val):
             
             print(f'company wide absent days in {curr_month_val} = ',companywide_absents_in_month_count)
             num_employees = len(Staff_data.objects.all())
+            print("num employees", num_employees)
+            print("num working days", num_working_days_in_month)
             #absent_rate, even though a variable in the ifelse block, has a scope global to the function.
             #scopes within ifelse blocks dont count as local, as it would have in other programming languages, like JAVA
             if num_employees > 0 & num_working_days_in_month == 0:
@@ -276,16 +283,19 @@ def absenteeism_rate_relative (request, month_val, year_val):
     if request.method == 'GET':
         try:
             curr_month_val = month_val #MM integer value for months, ranging from Jan(1) to Dec(12)
+            print(curr_month_val)
             curr_year_val = year_val #YYYY
             curr_absent_rate = monthly_absent_rate(month_val, year_val)
+            print("curr absent rate",curr_absent_rate)
 
             prev_month_val = (month_val - 1) if curr_month_val > 1 else 12
             prev_year_val = year_val if curr_month_val > 1 else year_val - 1
             prev_absent_rate = monthly_absent_rate(prev_month_val, prev_year_val)
+            print("Prev absent rate",prev_absent_rate)
 
-            diff = round((prev_absent_rate - curr_absent_rate) , 2)
+            diff = round((curr_absent_rate - prev_absent_rate) , 2)
 
-            return Response({'msg':f"{diff} % than last month",'diff': diff, 'status': 1})
+            return Response({'msg':f"{diff} % than last month",'diff': diff, 'curr':curr_absent_rate, 'prev':prev_absent_rate, 'status': 1})
         except Exception as e:
             return Response({'msg': str(e) , 'status':0})
 
@@ -314,7 +324,8 @@ def num_employees_on_leave_monthly(request):
         try:
             today_date = datetime.strptime(today_date_str, '%Y-%m-%d')
             curr_month = today_date.month
-            emp_list = Emp_Leave_Data.objects.filter(leave_to__month__gte = curr_month , leave_from__month__lte = curr_month).values("emp_id")
+            curr_year = today_date.year
+            emp_list = Emp_Leave_Data.objects.filter(Q(leave_from__lte=F('leave_to')) & Q(leave_to__month__gte = curr_month) & Q(leave_from__month__lte = curr_month)).values("emp_id")
             num = emp_list.distinct().count()
             print(emp_list)
             staff_detail_list = Staff_data.objects.filter(staff_id__in = emp_list.values("emp_id")).distinct()
@@ -372,7 +383,6 @@ def absenteeism_rate_list(request, year):
             else:
                 return Response({'msg':'Invalid year', 'status': 0})
 
-            
         except Exception as e:
             return Response({'msg':str(e) , 'status':0})
             
@@ -660,8 +670,8 @@ def num_employees_on_leave_on_day(request, date):
     if request.method == 'GET':
         try:
             today_date = datetime.strptime(date, "%Y-%m-%d").date()
-            employees_on_leave = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date))
-            num_employees = employees_on_leave.count()
+            employees_on_leave = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)).values('emp_id')
+            num_employees = employees_on_leave.distinct().count()
 
             #list of employees on leave today
             # -- SQL QUERY, LIST OF EMPLOYEES ON LEAVE TODAY-------------------------------------------- 
@@ -700,10 +710,10 @@ def num_employees_on_leave_today(request):
         try: 
             today_date = date.fromisoformat(today_date_str)
             #don't need to annotate and cast here because leave_from is a DateField. it will directly create a date object.
-            employees_on_leave_query_set = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)) #query set is returned
+            employees_on_leave_query_set = Emp_Leave_Data.objects.filter(Q(leave_from__lte = today_date) & Q(leave_to__gte = today_date)).values('emp_id') #query set is returned
             #you can generate the SQL query by doing .query on the query set. 
             print(employees_on_leave_query_set.query)
-            employee_count = employees_on_leave_query_set.count()
+            employee_count = employees_on_leave_query_set.distinct().count()
             list_of_employees_on_leave = Staff_data.objects.filter(staff_id__in = employees_on_leave_query_set.values("emp_id")).distinct()
             employees_on_leave_data_array = []
             for employee in list_of_employees_on_leave:

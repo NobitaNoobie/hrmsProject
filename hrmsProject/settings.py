@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-@ty8=%&_@50x8s%jyxy^y8*(2@!74*=1@lkc5#=yezr!lyp(pk
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['172.18.10.106', '127.0.0.1']
 
 
 # Application definition
@@ -59,6 +59,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5500',
+    'http://172.18.10.132:8001',
 ]
 
 ROOT_URLCONF = 'hrmsProject.urls'
