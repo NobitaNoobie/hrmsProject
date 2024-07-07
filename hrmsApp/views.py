@@ -218,7 +218,7 @@ def monthly_absent_rate(month_val, year_val):
             num_working_days_in_month = total_days_in_month - get_weekends_count(day1, day2)
             print('number of working days in month = ', num_working_days_in_month)
 
-            companywide_absents_in_month = Emp_Leave_Data.objects.filter(leave_to__gte = day1, leave_from__lte = day2)
+            companywide_absents_in_month = Emp_Leave_Data.objects.filter(leave_to__gte = day1, leave_from__lte = day2, approval_status = 1)
             companywide_absents_in_month_count = 0
 
             for leave in companywide_absents_in_month:
@@ -250,10 +250,10 @@ def monthly_absent_rate(month_val, year_val):
             print("num working days", num_working_days_in_month)
             #absent_rate, even though a variable in the ifelse block, has a scope global to the function.
             #scopes within ifelse blocks dont count as local, as it would have in other programming languages, like JAVA
-            if num_employees > 0 & num_working_days_in_month == 0:
-                absent_rate = round(((companywide_absents_in_month_count * 100) / (num_employees * num_working_days_in_month)) , 2)
-            else:
+            if (num_employees == 0) | (num_working_days_in_month == 0):
                 absent_rate = 0
+            else:
+                absent_rate = round(((companywide_absents_in_month_count * 100) / (num_employees * num_working_days_in_month)) , 2)
 
             return absent_rate
         
@@ -353,16 +353,19 @@ def absenteeism_rate_list(request, year):
             if year == curr_year:
                 absent_rate_list = []
                 #for i in range(1,5) -> for(int i=1, i<5, i++)
-                for month in range(1,curr_month+1):
+                for month in range(1, 13):
                     curr_absent_rate = monthly_absent_rate(month, curr_year)
+                    # did the below instead of curr_month because some person may take leave for  future month > curr_month, this will impact that future month's absent rate
+                    # thus this will be more insightful for future absenteeism.
                     absent_rate_list.append({
                         'month': month_val.get(month),
-                        'rate': f'{curr_absent_rate} %',
+                        'rate': curr_absent_rate,
                     })
                 response_data = {
                     f'Monthly rate of absenteeism for the year {year}:': absent_rate_list,
                 }
-                return Response({'msg': response_data, 'status':1})
+                # return Response({'msg': response_data, 'status':1})
+                return Response({'msg': absent_rate_list, 'status':1})
                         
             elif year < curr_year:
                 absent_rate_list = []
@@ -377,7 +380,8 @@ def absenteeism_rate_list(request, year):
                 response_data = {
                     f'Monthly rate of absenteeism for the year {year}: ': absent_rate_list,
                 }
-                return Response({'msg': response_data, 'status':1})
+                # return Response({'msg': response_data, 'status':1})
+                return Response({'msg': absent_rate_list, 'status':1})
                 #return Response({'msg':f'List of monthly absenteeism rates for the year {curr_year}', 'list': f'{absent_rate_list}', 'status':1})
 
             else:
